@@ -10,6 +10,9 @@ import { assert } from 'console';
 
 // TODO: put it in a dedicated class
 class ChirpstackEvent {
+  // a counter
+  static stats = 
+    {"up":0, "down":0, "ack":0, "txack": 0, "log": 0, "status": 0, "location": 0, "integration": 0};
   /**
    * Initialize protobuf by reading the definition in proto folder
    */
@@ -37,6 +40,7 @@ class ChirpstackEvent {
         "location": this.root.lookupType("integration.LocationEvent"), 
         "integration": this.root.lookupType("integration.IntegrationEvent")
     };
+
   }
 
   /**
@@ -65,7 +69,11 @@ class ChirpstackEvent {
 
       assert(Buffer.isBuffer(streamMessage.message[eventType])) 
       try {
-        return this.eventMap[eventType].decode(streamMessage.message[eventType]);             
+        let decodedMessage = this.eventMap[eventType].decode(streamMessage.message[eventType]);             
+        // update stats
+        ChirpstackEvent.stats[eventType] = ChirpstackEvent.stats[eventType] + 1;
+        
+        return decodedMessage;
       } catch (e) {
         if (e instanceof util.ProtocolError) {
           console.log("far decoded message with missing required fields");
@@ -75,6 +83,18 @@ class ChirpstackEvent {
         }
       }  
       return null;
+    }
+
+    static printStats(){
+      let total = 0;
+      for (let key in ChirpstackEvent.stats) {
+        total += ChirpstackEvent.stats[key]
+      }
+      
+      for (let key in ChirpstackEvent.stats) {
+        console.log( key+ " :\t\t" + ChirpstackEvent.stats[key]);
+      }
+      console.log(`${total} event received.`)
     }
   }
 
@@ -117,8 +137,14 @@ const client = await createClient(
 let currentId = '0-0'; // Start at lowest possible stream ID
 let streamName = 'device:stream:event';
 
+
+process.on('SIGINT', () => {  
+  console.log('Received SIGINT signal. Shutting down...');  
+  ChirpstackEvent.printStats();
+  process.exit();
+});
+
 // main loop waiting for events
-let i = 0;
 while (true) {
   try {
     let response = await client.xRead(
@@ -142,8 +168,6 @@ while (true) {
       let chirpEvent = new ChirpstackEvent();  
       currentId = ""+response[0].messages[0].id;    
       let newMessage = chirpEvent.decodeStream(response[0].messages[0])
-      i = i + 1;
-      console.log("number of messages read:" + i);
       if(options.verbose){
         console.log( newMessage );
       }            
@@ -156,3 +180,6 @@ while (true) {
     console.error(err);
   }
 }
+
+
+
