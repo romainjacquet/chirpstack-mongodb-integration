@@ -5,6 +5,28 @@
 import { createClient, commandOptions } from 'redis';
 import pkg from 'protobufjs';
 const { load, Root, util } = pkg;
+import { program } from 'commander';
+import { assert } from 'console';
+
+
+// CLi parsing
+program
+  .description('Chirp stack stream consumer')
+  .option('-h, --help', 'Collect the event from chirpstack and write to mongoDB')
+  .option('-v, --verbose', 'More verbose output to troubleshoot')
+  .parse(process.argv);
+
+const options = program.opts();
+
+if (options.verbose) {
+  console.log('Debug mode enabled');
+}
+
+if (options.help) {
+  program.outputHelp();
+  process.exit(0);
+}
+
 
 // Replace these values with your actual Redis server configuration
 const redisHost = 'localhost';
@@ -64,16 +86,18 @@ while (true) {
       }
     );
 
-    if (response) {
-      console.log(JSON.stringify(response));      
-      let bufferValue = response[0].messages[0].message.up;
-      console.log("id: " + response[0].messages[0].message.id);
-      console.log("response: " + typeof(bufferValue) + " buffer: "  + Buffer.isBuffer(bufferValue));
+    if (response) {      
+      let bufferValue = response[0].messages[0].message.up;      
+      assert(Buffer.isBuffer(bufferValue));      
 
       try {        
         let formattedPayload = new Uint8Array (bufferValue);
-        let decodedMessage = upMessage.decode(formattedPayload);        
-        console.log( decodedMessage );
+        let decodedMessage = upMessage.decode(formattedPayload);                
+        currentId = response[0].messages[0].id;
+        console.log(`Read stream id ${currentId}`);
+        if(options.verbose){
+          console.log( decodedMessage );
+        }        
       } catch (e) {
         if (e instanceof util.ProtocolError) {
           console.log("far decoded message with missing required fields");
@@ -81,10 +105,7 @@ while (true) {
           console.log("wire format is invalid" + e);
           //throw e; 
         }
-      } 
-      // Get the ID of the first (only) entry returned.
-      currentId = response[0].messages[0].id;
-      console.log(currentId);
+      }             
     } else {      
       console.log('No new stream entries.');
     }
