@@ -10,6 +10,9 @@ import { assert } from 'console';
 
 // TODO: put it in a dedicated class
 class ChirpstackEvent {
+  /**
+   * Initialize protobuf by reading the definition in proto folder
+   */
   constructor() {            
       this.root = new Root();
       // override function to resolve all file from proto folder
@@ -36,6 +39,10 @@ class ChirpstackEvent {
     };
   }
 
+  /**
+   * @param {object} streamMessage with id and event type key 
+   * @returns {object} with the chirpstack event
+   */
   decodeStream(streamMessage) {
       // a message has two key id and the message
       // the message a one key per item transmitted
@@ -110,7 +117,7 @@ const client = await createClient(
 let currentId = '0-0'; // Start at lowest possible stream ID
 let streamName = 'device:stream:event';
 
-
+// main loop waiting for events
 let i = 0;
 while (true) {
   try {
@@ -140,8 +147,10 @@ while (true) {
       if(options.verbose){
         console.log( newMessage );
       }            
-    } else {      
-      console.log('No new stream entries.');
+    } else {
+      if(options.verbose) {
+        console.log('No new stream entries.');
+      }            
     }
   } catch (err) {
     console.error(err);
