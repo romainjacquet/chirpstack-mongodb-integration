@@ -8,6 +8,69 @@ const { load, Root, util } = pkg;
 import { program } from 'commander';
 import { assert } from 'console';
 
+// TODO: put it in a dedicated class
+class ChirpstackEvent {
+  constructor() {            
+      this.root = new Root();
+      // override function to resolve all file from proto folder
+      // and not relative the import
+      // cf. https://github.com/protobufjs/protobuf.js/issues/368
+      this.root.resolvePath = function(origin, target) {
+          let rootPath = "proto"
+          let resolvedPath = `${rootPath}/${target}`
+          //console.debug("origin: " + origin + "target: " + target + "=>" + resolvedPath);    
+          // determine the path to load and return it (i.e. use a regex)
+          return resolvedPath
+      };
+      this.root.loadSync('integration/integration.proto');
+      this.root.resolveAll()
+      this.eventMap = {
+        "up": this.root.lookupType("integration.UplinkEvent"),
+        "down": this.root.lookupType("integration.JoinEvent"),
+        "ack": this.root.lookupType("integration.AckEvent"),
+        "txack": this.root.lookupType("integration.TxAckEvent"),
+        "log": this.root.lookupType("integration.LogEvent"), 
+        "status": this.root.lookupType("integration.StatusEvent"), 
+        "location": this.root.lookupType("integration.LocationEvent"), 
+        "integration": this.root.lookupType("integration.IntegrationEvent")
+    };
+  }
+
+  decodeStream(streamMessage) {
+      // a message has two key id and the message
+      // the message a one key per item transmitted
+      console.log("Read event: " + streamMessage.id)
+      let eventType = null;
+      for (let key in streamMessage.message) {
+        if(key != "id"){
+          eventType = key;
+          break;
+        }
+      }
+      if (eventType == null){
+        return null;
+      }
+      console.log("Event Type: " + eventType)
+      if(! eventType in this.eventMap) {
+        console.log("Received unknown event:" + eventType);
+        return null;
+      }
+
+      assert(Buffer.isBuffer(streamMessage.message[eventType])) 
+      try {
+        return this.eventMap[eventType].decode(streamMessage.message[eventType]);             
+      } catch (e) {
+        if (e instanceof util.ProtocolError) {
+          console.log("far decoded message with missing required fields");
+        } else {
+          console.log("wire format is invalid" + e);
+          //throw e; 
+        }
+      }  
+      return null;
+    }
+  }
+
 
 // CLi parsing
 program
@@ -48,29 +111,11 @@ let currentId = '0-0'; // Start at lowest possible stream ID
 let streamName = 'device:stream:event';
 
 
-
-// protobuf initialisation
-var root = new Root();
-// override function to resolve all file from proto folder
-// and not relative the import
-// cf. https://github.com/protobufjs/protobuf.js/issues/368
-root.resolvePath = function(origin, target) {
-    let rootPath = "proto"
-    let resolvedPath = `${rootPath}/${target}`
-    console.debug("origin: " + origin + "target: " + target + "=>" + resolvedPath);    
-    // determine the path to load and return it (i.e. use a regex)
-    return resolvedPath
-};
-root.loadSync('integration/integration.proto');
-root.resolveAll()
-let upMessage = root.lookupType("integration.UplinkEvent");
-
-
+let i = 0;
 while (true) {
   try {
     let response = await client.xRead(
-      commandOptions({
-        isolated: true,
+      commandOptions({        
         returnBuffers: true
       }), [
         // XREAD can read from multiple streams, starting at a
@@ -82,30 +127,19 @@ while (true) {
       ], {
         // Read 1 entry at a time, block for 5 seconds if there are none.
         COUNT: 1,
-        BLOCK: 5000
+        BLOCK: 10000
       }
     );
 
     if (response) {      
-      let bufferValue = response[0].messages[0].message.up;      
-      assert(Buffer.isBuffer(bufferValue));      
-
-      try {        
-        let formattedPayload = new Uint8Array (bufferValue);
-        let decodedMessage = upMessage.decode(formattedPayload);                
-        currentId = response[0].messages[0].id;
-        console.log(`Read stream id ${currentId}`);
-        if(options.verbose){
-          console.log( decodedMessage );
-        }        
-      } catch (e) {
-        if (e instanceof util.ProtocolError) {
-          console.log("far decoded message with missing required fields");
-        } else {
-          console.log("wire format is invalid" + e);
-          //throw e; 
-        }
-      }             
+      let chirpEvent = new ChirpstackEvent();  
+      currentId = ""+response[0].messages[0].id;    
+      let newMessage = chirpEvent.decodeStream(response[0].messages[0])
+      i = i + 1;
+      console.log("number of messages read:" + i);
+      if(options.verbose){
+        console.log( newMessage );
+      }            
     } else {      
       console.log('No new stream entries.');
     }
