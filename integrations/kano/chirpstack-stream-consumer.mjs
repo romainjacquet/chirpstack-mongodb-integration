@@ -230,14 +230,17 @@ program
   It's not recommanded to use command line switches for passwords.`)
   .option('-h, --help', 'display help')
   .option('-v, --verbose', 'verbose output to troubleshoot')
-  .addOption(new Option('--redisHost <host>', 'redis hostname').env("REDIS_HOST"))
-  .addOption(new Option('--redisPort <port>', 'redis port').argParser(parseInt).env("REDIS_PORT"))  
+  .addOption(new Option('--redisHost <host>', 'redis hostname').env("REDIS_HOST").default('localhost', 'localhost'))
+  .addOption(new Option('--redisPort <port>', 'redis port')
+    .argParser(parseInt).env("REDIS_PORT").default('6379', 'standard redis port 6379'))  
   .addOption(new Option('--redisPassword <password>', 'redis password').env("REDIS_PASSWORD"))
-  .addOption(new Option('--mongoDB <DB>', 'mongo db name').env('MONGO_DB_NAME'))
+  .addOption(new Option('--mongoDB <DB>', 'mongo db name').env('MONGO_DB_NAME').default('kano', 'kano database is used'))
   .addOption(new Option('--mongoUser <user>', 'mongo user name').env('MONGO_USER'))
   .addOption(new Option('--mongoPassword <password>', 'mongo password').env('MONGO_PASSWORD'))
-  .addOption(new Option('--mongoPort <port>', 'mongo port').env('MONGO_PORT').argParser(parseInt))
-  .addOption(new Option('--mongoHost <host>', 'mongo host ').env('MONGO_HOST'))
+  .addOption(new Option('--mongoPort <port>', 'mongo port')
+    .env('MONGO_PORT').argParser(parseInt).default(27017, 'mongo DB default port 27017'))
+  .addOption(new Option('--mongoHost <host>', 'mongo host ')
+    .env('MONGO_HOST').default('localhost', 'localhost'))
   .parse(process.argv);
 
 const options = program.opts();
