@@ -5,8 +5,9 @@
 import { createClient, commandOptions } from 'redis';
 import pkg from 'protobufjs';
 const { load, Root, util } = pkg;
-import { program } from 'commander';
+import { program, Option } from 'commander';
 import { assert } from 'console';
+import { MongoClient } from 'mongodb';
 
 
 // TODO: put it in a dedicated class
@@ -125,11 +126,13 @@ class UplinkEventAdapter {
   /**
    * default constructor
    */
-  constructor() {  
+  constructor(mongoUri, mongoDB) {  
     // TODO : connexion to mongoDB
     // FIXME: hard-coded value for the moment, replace by API gPRC calls
     this.GWMap = {'24e124fffef460b4': {"lat": 43.600443297757835, "lon": 1.419038772583008}};
     this.devicesEUID = ['24e124136d490175', '	24e124743d429065'];
+    this.mongoURI = mongoUri
+    this.mongoDB = mongoDB
   }
 
   /**
@@ -187,7 +190,31 @@ class UplinkEventAdapter {
         assert(false)
     }
     return null;
-  }  
+  }
+  
+  /**
+   * Insert object into mongoDB
+   * @param {geojson object} geoJson 
+   */
+  async insertGeoJSON(geoJson) {
+    const client = new MongoClient(this.mongoURI);
+    const observationCollection = "chirpstack-observations";
+    try {
+        await client.connect();
+        console.log(`Connected to MongoDB ${this.mongoDB} opened`);
+        const db = client.db(this.mongoDB);                
+        const collection = db.collection(observationCollection);
+        
+        // Insert GeoJSON object into collection
+        await collection.insertOne(geoJson);
+        console.log('GeoJSON inserted successfully');
+    } catch (error) {
+        console.error('Error inserting GeoJSON:', error);
+    } finally {
+        await client.close();
+        console.log('MongoDB connection closed');
+    }
+  }
 }
 
 
@@ -196,6 +223,11 @@ program
   .description('Chirp stack stream consumer')
   .option('-h, --help', 'Collect the event from chirpstack and write to mongoDB')
   .option('-v, --verbose', 'More verbose output to troubleshoot')
+  .requiredOption('--redisHost <host>', 'redis hostname')
+  .addOption(new Option('--redisPort <port>', 'redis port').argParser(parseInt))  
+  .requiredOption('--redisPassword <password>', 'redis password')
+  .requiredOption('--mongoURI <uri>', 'A mongdb uri with the DB included.')    
+  .requiredOption('--mongoDB <DB>', 'mongo db name.')    
   .parse(process.argv);
 
 const options = program.opts();
@@ -208,19 +240,13 @@ if (options.help) {
   program.outputHelp();
   process.exit(0);
 }
-
-
-// Replace these values with your actual Redis server configuration
-const redisHost = 'localhost';
-const redisPort = '6379';
-const redisPassword = 'TheRedisPwd!';
-
+console.log(options.redisHost);
 
 const client = await createClient(    
     {
-        host: redisHost,
-        port: redisPort,
-        password: redisPassword
+        host: options.redisHost,
+        port: Number.parseInt(options.redisPort),
+        password: options.redisPassword
     }
 )
   .on('error', err => console.log('Redis Client Error', err))
@@ -262,9 +288,9 @@ while (true) {
       currentId = ""+response[0].messages[0].id;    
       let newMessage = chirpEvent.decodeStream(response[0].messages[0])
       if(newMessage !== null){
-        let adapter = new UplinkEventAdapter();
+        let adapter = new UplinkEventAdapter(options.mongoURI, options.mongoDB);
         let geojson = adapter.getGeoJSON(newMessage);
-        console.log(geojson);
+        adapter.insertGeoJSON(geojson);
         if(options.verbose){
           console.log( newMessage );
         }            
