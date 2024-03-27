@@ -8,6 +8,7 @@ const { load, Root, util } = pkg;
 import { program } from 'commander';
 import { assert } from 'console';
 
+
 // TODO: put it in a dedicated class
 class ChirpstackEvent {
   // a counter
@@ -40,10 +41,21 @@ class ChirpstackEvent {
         "location": this.root.lookupType("integration.LocationEvent"), 
         "integration": this.root.lookupType("integration.IntegrationEvent")
     };
-
+    this.eventFilters;
   }
 
   /**
+   * Allow the user to filter event and keep only some events
+   * For the filtered event, decode function will return null
+   * Ex: filter(['up', 'log'])
+   * @param {Array} eventsName 
+   */
+  setFilter(eventsName){
+    this.eventFilters = eventsName;
+  }
+
+  /**
+   * decode a message from protobug, according to the filters
    * @param {object} streamMessage with id and event type key 
    * @returns {object} with the chirpstack event
    */
@@ -66,6 +78,12 @@ class ChirpstackEvent {
         console.log("Received unknown event:" + eventType);
         return null;
       }
+      // check filter
+      if(this.eventFilters.length > 0){
+        if(!this.eventFilters.includes(eventType)){
+          return null;
+        }
+      }
 
       assert(Buffer.isBuffer(streamMessage.message[eventType])) 
       try {
@@ -85,6 +103,9 @@ class ChirpstackEvent {
       return null;
     }
 
+    /**
+     * Display a summary of all the event processed by the class
+     */
     static printStats(){
       let total = 0;
       for (let key in ChirpstackEvent.stats) {
@@ -97,6 +118,77 @@ class ChirpstackEvent {
       console.log(`${total} event received.`)
     }
   }
+
+// TODO: put it in a dedicated class
+// transforma a Chirpstack Event to geoJson
+class UplinkEventAdapter {
+  /**
+   * default constructor
+   */
+  constructor() {  
+    // TODO : connexion to mongoDB
+    // FIXME: hard-coded value for the moment, replace by API gPRC calls
+    this.GWMap = {'24e124fffef460b4': {"lat": 43.600443297757835, "lon": 1.419038772583008}};
+    this.devicesEUID = ['24e124136d490175', '	24e124743d429065'];
+  }
+
+  /**
+   * 
+   * @param {object} jsChirpEvent decoded from the protobuf
+   * @returns ${object} geoJSON object
+   */
+  getGeoJSON(jsChirpEvent){
+    // get location
+    let gwEuid = jsChirpEvent.rxInfo[0].gatewayId;
+    if(! gwEuid in this.GWMap){
+      console.log(`Unknown gateway ${gwEuid}.`);
+      return null;
+    }
+    let lat = this.GWMap[gwEuid].lat;
+    let lon = this.GWMap[gwEuid].lon;
+    // read measures
+    let euid = jsChirpEvent.deviceInfo.devEui ;    
+    // create the geoJson and copy the properties    
+    let geoJSON = {
+      type: 'Point',
+      coordinates: [lon, lat],
+      properties: {} 
+    };
+    for (const key in jsChirpEvent.object.fields){
+      geoJSON.properties[key] = this.getKindValue(jsChirpEvent.object.fields[key]);      
+    }     
+    return geoJSON;
+  }
+
+  /**
+   * extract value from Value message (cf protobug struct.proto from google)
+   * @param {*} protoMessage 
+   * @returns 
+   */
+  getKindValue(protoMessage){
+    
+    let properties = Object.getOwnPropertyNames(protoMessage);
+    assert(properties.length == 1)
+    let kind = properties[0];
+    switch(kind){
+      case "numberValue":
+      case "stringValue":
+      case "boolValue":
+      case "nullValue":
+        return protoMessage[kind];
+        break;
+      case "structValue":
+      case "listValue":
+        console.log("Not currently supported");
+        assert(false)
+        break;
+      default:
+        console.log("Unsupported type:"+kind);
+        assert(false)
+    }
+    return null;
+  }  
+}
 
 
 // CLi parsing
@@ -165,12 +257,18 @@ while (true) {
     );
 
     if (response) {      
-      let chirpEvent = new ChirpstackEvent();  
+      let chirpEvent = new ChirpstackEvent();
+      chirpEvent.setFilter(["up"]);
       currentId = ""+response[0].messages[0].id;    
       let newMessage = chirpEvent.decodeStream(response[0].messages[0])
-      if(options.verbose){
-        console.log( newMessage );
-      }            
+      if(newMessage !== null){
+        let adapter = new UplinkEventAdapter();
+        let geojson = adapter.getGeoJSON(newMessage);
+        console.log(geojson);
+        if(options.verbose){
+          console.log( newMessage );
+        }            
+      }      
     } else {
       if(options.verbose) {
         console.log('No new stream entries.');
