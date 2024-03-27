@@ -121,18 +121,23 @@ class ChirpstackEvent {
   }
 
 // TODO: put it in a dedicated class
-// transforma a Chirpstack Event to geoJson
 class UplinkEventAdapter {
   /**
-   * default constructor
+   * Allow the transformation of JSon object coming from Chirpstack to GeoJSON
+   * Allow to write to mongo
+   * @param {string} user 
+   * @param {string} password 
+   * @param {string} host 
+   * @param {number} port 
+   * @param {string} mongoDB database name
    */
-  constructor(mongoUri, mongoDB) {  
+  constructor(user, password, host, port, database) {  
     // TODO : connexion to mongoDB
     // FIXME: hard-coded value for the moment, replace by API gPRC calls
     this.GWMap = {'24e124fffef460b4': {"lat": 43.600443297757835, "lon": 1.419038772583008}};
     this.devicesEUID = ['24e124136d490175', '	24e124743d429065'];
-    this.mongoURI = mongoUri
-    this.mongoDB = mongoDB
+    this.mongoURI = `mongodb://${user}:${password}@${host}:${port}/${database}`
+    this.mongoDB = database
   }
 
   /**
@@ -220,14 +225,19 @@ class UplinkEventAdapter {
 
 // CLi parsing
 program
-  .description('Chirp stack stream consumer')
-  .option('-h, --help', 'Collect the event from chirpstack and write to mongoDB')
-  .option('-v, --verbose', 'More verbose output to troubleshoot')
-  .requiredOption('--redisHost <host>', 'redis hostname')
-  .addOption(new Option('--redisPort <port>', 'redis port').argParser(parseInt))  
-  .requiredOption('--redisPassword <password>', 'redis password')
-  .requiredOption('--mongoURI <uri>', 'A mongdb uri with the DB included.')    
-  .requiredOption('--mongoDB <DB>', 'mongo db name.')    
+  .description(`Chirp stack stream consumer. 
+  Collect events from chirpstack and write to mongoDB
+  It's not recommanded to use command line switches for passwords.`)
+  .option('-h, --help', 'display help')
+  .option('-v, --verbose', 'verbose output to troubleshoot')
+  .addOption(new Option('--redisHost <host>', 'redis hostname').env("REDIS_HOST"))
+  .addOption(new Option('--redisPort <port>', 'redis port').argParser(parseInt).env("REDIS_PORT"))  
+  .addOption(new Option('--redisPassword <password>', 'redis password').env("REDIS_PASSWORD"))
+  .addOption(new Option('--mongoDB <DB>', 'mongo db name').env('MONGO_DB_NAME'))
+  .addOption(new Option('--mongoUser <user>', 'mongo user name').env('MONGO_USER'))
+  .addOption(new Option('--mongoPassword <password>', 'mongo password').env('MONGO_PASSWORD'))
+  .addOption(new Option('--mongoPort <port>', 'mongo port').env('MONGO_PORT').argParser(parseInt))
+  .addOption(new Option('--mongoHost <host>', 'mongo host ').env('MONGO_HOST'))
   .parse(process.argv);
 
 const options = program.opts();
@@ -288,7 +298,8 @@ while (true) {
       currentId = ""+response[0].messages[0].id;    
       let newMessage = chirpEvent.decodeStream(response[0].messages[0])
       if(newMessage !== null){
-        let adapter = new UplinkEventAdapter(options.mongoURI, options.mongoDB);
+        let adapter = new UplinkEventAdapter(
+          options.mongoUser, options.mongoPassword, options.mongoHost, options.mongoPort, options.mongoDB);
         let geojson = adapter.getGeoJSON(newMessage);
         adapter.insertGeoJSON(geojson);
         if(options.verbose){
