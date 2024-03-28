@@ -253,12 +253,14 @@ if (options.help) {
   program.outputHelp();
   process.exit(0);
 }
-console.log(options.redisHost);
+console.log(`connect to ${options.redisHost}:${options.redisPort} '${options.redisPassword}'`);
 
 const client = await createClient(    
     {
-        host: options.redisHost,
-        port: Number.parseInt(options.redisPort),
+        socket: {
+          host: options.redisHost,
+          port: Number.parseInt(options.redisPort)
+        },        
         password: options.redisPassword
     }
 )
