@@ -9,7 +9,7 @@ The behaviour of the micro service is:
   * write to mongo DB in a collection called `chirpstack-observations`
 
 > [!WARNING]
-> For the moment only event with type Up are handled
+> For the moment only event with type Up are handled. Event like log, join and other are not handled.
 
 ## build
 
