@@ -253,7 +253,7 @@ if (options.help) {
   program.outputHelp();
   process.exit(0);
 }
-console.log(`connect to ${options.redisHost}:${options.redisPort} '${options.redisPassword}'`);
+console.log(`connect to ${options.redisHost}:${options.redisPort}`);
 
 const client = await createClient(    
     {

@@ -13,12 +13,10 @@ The behaviour of the micro service is:
 
 ## build
 
+A shell script `build.sh` is provided to aggregate command to build and push in the minikube cluster.
+
 ```shell
-docker build -t kalisio/chirpstack-kano-integration .
-IMAGE_ID=$(docker images --format '{{ .Repository }}:{{ .Tag }}:{{ .ID }}' | grep kalisio/chirpstack-kano-integration:latest | cut -d ':' -f 3)
-docker tag $IMAGE_ID kalisio/chirpstack-kano-integration:1.0
-docker save -o /tmp/image.tar  kalisio/chirpstack-kano-integration
-minikube image load /tmp/image.tar
+./build.sh
 ```
 
 The command `docker save` is required due to a docker regression in docker 25 (cf. [minikube/issues/18021](https://github.com/kubernetes/minikube/issues/18021) ).
