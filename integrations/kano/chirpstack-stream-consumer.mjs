@@ -125,6 +125,7 @@ class UplinkEventAdapter {
   /**
    * Allow the transformation of JSon object coming from Chirpstack to GeoJSON
    * Allow to write to mongo
+   * The constructor doesn't do anything except initialization variables
    * @param {string} user 
    * @param {string} password 
    * @param {string} host 
@@ -132,12 +133,13 @@ class UplinkEventAdapter {
    * @param {string} mongoDB database name
    */
   constructor(user, password, host, port, database) {  
-    // TODO : connexion to mongoDB
     // FIXME: hard-coded value for the moment, replace by API gPRC calls
     this.GWMap = {'24e124fffef460b4': {"lat": 43.600443297757835, "lon": 1.419038772583008}};
     this.devicesEUID = ['24e124136d490175', '	24e124743d429065'];
-    this.mongoURI = `mongodb://${user}:${password}@${host}:${port}/${database}`
-    this.mongoDB = database
+    this.mongoURI = `mongodb://${user}:${password}@${host}:${port}/${database}`;
+    this.mongoDB = database;
+    this.observationsCollection = "chirpstack-observations";
+    this.stationsCollection = "chirpstack-stations";
   }
 
   /**
@@ -146,7 +148,7 @@ class UplinkEventAdapter {
    * @returns ${object} geoJSON object
    */
   getGeoJSON(jsChirpEvent){
-    // get location
+    // get location to check if the gateway is registered
     let gwEuid = jsChirpEvent.rxInfo[0].gatewayId;
     if(! gwEuid in this.GWMap){
       console.log(`Unknown gateway ${gwEuid}.`);
@@ -156,15 +158,26 @@ class UplinkEventAdapter {
     let lon = this.GWMap[gwEuid].lon;
     // read measures
     let euid = jsChirpEvent.deviceInfo.devEui ;    
+    let ns_time_ms = jsChirpEvent.rxInfo[0].nsTime.seconds * 1000 + jsChirpEvent.rxInfo[0].nsTime.nanos / 1000;
+    let gateway_id = jsChirpEvent.rxInfo[0].gatewayId;
+    const observation_datetime = new Date(ns_time_ms).toISOString();
     // create the geoJson and copy the properties    
     let geoJSON = {
-      type: 'Point',
-      coordinates: [lon, lat],
-      properties: {} 
+      type: 'Feature',
+      geometry: {
+        type: "Point",
+        coordinates: [lon, lat],
+      },      
+      properties: {},
+      time: observation_datetime
     };
+    geoJSON.properties['sensor_values'] = {}
     for (const key in jsChirpEvent.object.fields){
-      geoJSON.properties[key] = this.getKindValue(jsChirpEvent.object.fields[key]);      
+      geoJSON.properties['sensor_values'][key] = this.getKindValue(jsChirpEvent.object.fields[key]);      
     }     
+    geoJSON.properties['euid'] = jsChirpEvent.deviceInfo.devEui;
+    geoJSON.properties['name'] = jsChirpEvent.deviceInfo.deviceName;
+    geoJSON.properties['gw_euid'] = gateway_id;
     return geoJSON;
   }
 
@@ -203,21 +216,81 @@ class UplinkEventAdapter {
    */
   async insertGeoJSON(geoJson) {
     const client = new MongoClient(this.mongoURI);
-    const observationCollection = "chirpstack-observations";
+    
     try {
         await client.connect();
-        console.log(`Connected to MongoDB ${this.mongoDB} opened`);
+        console.log(`Connected to MongoDB ${this.mongoDB}`);
         const db = client.db(this.mongoDB);                
-        const collection = db.collection(observationCollection);
+        const collection = db.collection(this.observationsCollection);
         
         // Insert GeoJSON object into collection
         await collection.insertOne(geoJson);
-        console.log('GeoJSON inserted successfully');
+        console.log(`GeoJSON inserted successfully into ${this.observationsCollection}`);
     } catch (error) {
         console.error('Error inserting GeoJSON:', error);
     } finally {
         await client.close();
         console.log('MongoDB connection closed');
+    }
+  }
+
+  /**
+   * Clean the observations collection; usefull when updating the model
+   * @param {string} collectionName collection to delete
+   */
+  async deleteCollection(collectionName){
+    const client = new MongoClient(this.mongoURI);
+    
+    try {
+        await client.connect();
+        const db = client.db(this.mongoDB);                
+        const collection = db.collection(this.collectionName);
+        
+        // delete all objects
+        const result = await collection.deleteMany({});
+        console.log(`Delete ${result.deletedCount} items from ${this.collectionName}.`);
+    } catch (error) {
+        console.error(`Error cleaning collection ${this.collectionName}: ${error}`);
+    } finally {
+        await client.close();
+    }
+  }
+
+  /**
+   * Mock waiting a more complete system, create a gateway in the collection option
+   * 
+   */
+  async initialize(){
+    assert(Object.keys(this.GWMap) == 1);
+    let gwEuid = Object.keys(this.GWMap)[0];
+    const client = new MongoClient(this.mongoURI);
+    
+    try {
+        await client.connect();
+        const db = client.db(this.mongoDB);                
+        const collection = db.collection(this.stationsCollection);
+        // check if stations exists
+        let result = await collection.findOne({"properties.euid": gwEuid});
+        if(!result){
+          let geoJson = {
+            type: 'Feature',
+            geometry: {
+              type: "Point",
+              coordinates: [this.GWMap[gwEuid].lon, this.GWMap[gwEuid].lat],
+            },      
+            properties: {
+              euid: gwEuid,
+              name: "MileSight GW"
+            }
+          }
+          await collection.insertOne(geoJson);
+          console.log(`Gateway inserted successfully into ${this.stationsCollection}`);
+        }
+        
+    } catch (error) {
+        console.error(`Error adding gateway in collection ${this.stationsCollection}: ${error}`);
+    } finally {
+        await client.close();
     }
   }
 }
@@ -234,6 +307,8 @@ program
   .addOption(new Option('--redisPort <port>', 'redis port')
     .argParser(parseInt).env("REDIS_PORT").default('6379', 'standard redis port 6379'))  
   .addOption(new Option('--redisPassword <password>', 'redis password').env("REDIS_PASSWORD"))
+  .addOption(new Option('--disableWrite', 'don\'t push to mongo DB').env('DISABLE_WRITE').default(false))
+  .addOption(new Option('--cleanMongoDB', 'delete object from the chirpstack collections').env('MONGO_CLEAN').default(false))
   .addOption(new Option('--mongoDB <DB>', 'mongo db name').env('MONGO_DB_NAME').default('kano', 'kano database is used'))
   .addOption(new Option('--mongoUser <user>', 'mongo user name').env('MONGO_USER'))
   .addOption(new Option('--mongoPassword <password>', 'mongo password').env('MONGO_PASSWORD'))
@@ -277,6 +352,20 @@ process.on('SIGINT', () => {
   process.exit();
 });
 
+// create adapter and initialize mongodb
+let adapter = new UplinkEventAdapter(
+  options.mongoUser, 
+  options.mongoPassword, 
+  options.mongoHost, 
+  options.mongoPort, 
+  options.mongoDB);
+if(options.cleanMongoDB){
+  console.log("Clean existing observations in MongoDB");
+  await adapter.deleteCollection(adapter.observationsCollection);
+  await adapter.deleteCollection(adapter.stationsCollection);
+}
+await adapter.initialize();
+
 // main loop waiting for events
 while (true) {
   try {
@@ -302,11 +391,11 @@ while (true) {
       chirpEvent.setFilter(["up"]);
       currentId = ""+response[0].messages[0].id;    
       let newMessage = chirpEvent.decodeStream(response[0].messages[0])
-      if(newMessage !== null){
-        let adapter = new UplinkEventAdapter(
-          options.mongoUser, options.mongoPassword, options.mongoHost, options.mongoPort, options.mongoDB);
+      if(newMessage !== null){        
         let geojson = adapter.getGeoJSON(newMessage);
-        adapter.insertGeoJSON(geojson);
+        if(!options.disableWrite){
+          adapter.insertGeoJSON(geojson);
+        }        
         if(options.verbose){
           console.log( newMessage );
         }            
