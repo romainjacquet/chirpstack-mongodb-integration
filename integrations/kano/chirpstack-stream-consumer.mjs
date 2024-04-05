@@ -145,9 +145,9 @@ class UplinkEventAdapter {
   /**
    * 
    * @param {object} jsChirpEvent decoded from the protobuf
-   * @returns ${object} geoJSON object
+   * @returns ${Array} of geoJSON object
    */
-  getGeoJSON(jsChirpEvent){
+  getGeoJSONFeatures(jsChirpEvent){
     // get location to check if the gateway is registered
     let gwEuid = jsChirpEvent.rxInfo[0].gatewayId;
     if(! gwEuid in this.GWMap){
@@ -160,25 +160,26 @@ class UplinkEventAdapter {
     let euid = jsChirpEvent.deviceInfo.devEui ;    
     let ns_time_ms = jsChirpEvent.rxInfo[0].nsTime.seconds * 1000 + jsChirpEvent.rxInfo[0].nsTime.nanos / 1000;
     let gateway_id = jsChirpEvent.rxInfo[0].gatewayId;
-    const observation_datetime = new Date(ns_time_ms).toISOString();
-    // create the geoJson and copy the properties    
-    let geoJSON = {
-      type: 'Feature',
-      geometry: {
-        type: "Point",
-        coordinates: [lon, lat],
-      },      
-      properties: {},
-      time: observation_datetime
-    };
-    geoJSON.properties['sensor_values'] = {}
+    const observation_datetime = new Date(ns_time_ms);
+    // create the geoJson, Kano require one feature per sensor
+    let geoJSONArray = []
     for (const key in jsChirpEvent.object.fields){
-      geoJSON.properties['sensor_values'][key] = this.getKindValue(jsChirpEvent.object.fields[key]);      
-    }     
-    geoJSON.properties['euid'] = jsChirpEvent.deviceInfo.devEui;
-    geoJSON.properties['name'] = jsChirpEvent.deviceInfo.deviceName;
-    geoJSON.properties['gw_euid'] = gateway_id;
-    return geoJSON;
+      let geoJSON = {
+        type: 'Feature',
+        geometry: {
+          type: "Point",
+          coordinates: [lon, lat],
+        },      
+        properties: {          
+          'euid': jsChirpEvent.deviceInfo.devEui,
+          'name' : jsChirpEvent.deviceInfo.deviceName,
+          'gw_euid': gateway_id },
+        time: observation_datetime
+      };
+      geoJSON['properties'][key] = this.getKindValue(jsChirpEvent.object.fields[key]);
+      geoJSONArray.push(geoJSON);   
+    }        
+    return geoJSONArray;
   }
 
   /**
@@ -212,9 +213,9 @@ class UplinkEventAdapter {
   
   /**
    * Insert object into mongoDB
-   * @param {geojson object} geoJson 
+   * @param {geojson features} array of geojson features 
    */
-  async insertGeoJSON(geoJson) {
+  async insertGeoJSONFeatures(features) {
     const client = new MongoClient(this.mongoURI);
     
     try {
@@ -223,8 +224,9 @@ class UplinkEventAdapter {
         const db = client.db(this.mongoDB);                
         const collection = db.collection(this.observationsCollection);
         
-        // Insert GeoJSON object into collection
-        await collection.insertOne(geoJson);
+        for(const feature of features){
+          await collection.insertOne(feature);
+        }        
         console.log(`GeoJSON inserted successfully into ${this.observationsCollection}`);
     } catch (error) {
         console.error('Error inserting GeoJSON:', error);
@@ -244,13 +246,13 @@ class UplinkEventAdapter {
     try {
         await client.connect();
         const db = client.db(this.mongoDB);                
-        const collection = db.collection(this.collectionName);
+        const collection = db.collection(collectionName);
         
         // delete all objects
         const result = await collection.deleteMany({});
-        console.log(`Delete ${result.deletedCount} items from ${this.collectionName}.`);
+        console.log(`Delete ${result.deletedCount} items from ${collectionName}.`);
     } catch (error) {
-        console.error(`Error cleaning collection ${this.collectionName}: ${error}`);
+        console.error(`Error cleaning collection ${collectionName}: ${error}`);
     } finally {
         await client.close();
     }
@@ -261,7 +263,7 @@ class UplinkEventAdapter {
    * 
    */
   async initialize(){
-    assert(Object.keys(this.GWMap) == 1);
+    assert(Object.keys(this.GWMap).length == 1);
     let gwEuid = Object.keys(this.GWMap)[0];
     const client = new MongoClient(this.mongoURI);
     
@@ -280,6 +282,7 @@ class UplinkEventAdapter {
             },      
             properties: {
               euid: gwEuid,
+              "gw_euid": gwEuid,
               name: "MileSight GW"
             }
           }
@@ -392,9 +395,9 @@ while (true) {
       currentId = ""+response[0].messages[0].id;    
       let newMessage = chirpEvent.decodeStream(response[0].messages[0])
       if(newMessage !== null){        
-        let geojson = adapter.getGeoJSON(newMessage);
+        let features = adapter.getGeoJSONFeatures(newMessage);
         if(!options.disableWrite){
-          adapter.insertGeoJSON(geojson);
+          await adapter.insertGeoJSONFeatures(features);
         }        
         if(options.verbose){
           console.log( newMessage );
