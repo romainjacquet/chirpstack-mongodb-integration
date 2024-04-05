@@ -3,7 +3,7 @@
 # definitions
 IMAGE_REPOSITORY="harbor.portal.kalisio.com"
 IMAGE_NAME="kalisio/chirpstack-kano-integration"
-IMAGE_TAG=1.8
+IMAGE_TAG=latest
 IMAGE_TMP_TARBALL="/tmp/image.tar"
 
 # commands to builds
