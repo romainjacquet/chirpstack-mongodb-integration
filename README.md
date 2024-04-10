@@ -35,15 +35,15 @@ lora protocol.
 
 This is an example of a station, a MileSight gateway:
 ```json
-{   type: 'Feature',
-    geometry: {
-      type: 'Point',
-      coordinates: [ 1.419038772583008, 43.600443297757835 ]
+{   "type": "Feature",
+    "geometry": {
+      "type": "Point",
+      "coordinates": [ 1.419038772583008, 43.600443297757835 ]
     },
-    properties: {
-      euid: '24e124fffef460b4',
-      gw_euid: '24e124fffef460b4',
-      name: 'MileSight GW'
+    "properties": {
+      "euid": "24e124fffef460b4",
+      "gw_euid": "24e124fffef460b4",
+      "name": "MileSight GW"
     }
 }
 ```
@@ -52,18 +52,18 @@ Below is an example of an observation for a sound sensor. Note the additionnal t
 and the `laeq` value returned by the sensor.
 ```json
 {
-  type: 'Feature',
-  geometry: {
-    type: 'Point',
-    coordinates: [ 1.419038772583008, 43.600443297757835 ]
+  "type": "Feature",
+  "geometry": {
+    "type": "Point",
+    "coordinates": [ 1.419038772583008, 43.600443297757835 ]
   },
-  properties: {
-    euid: '24e124743d429065',
-    name: 'ABP-soundSensor',
-    gw_euid: '24e124fffef460b4',
-    laeq: 42.9
+  "properties": {
+    "euid": "24e124743d429065",
+    "name": "ABP-soundSensor",
+    "gw_euid": "24e124fffef460b4",
+    "laeq": 42.9
   },
-  time: ISODate('2024-04-09T16:42:28.382Z')
+  "time": "2024-04-09T16:42:28.382Z"
 }
 ```
    
