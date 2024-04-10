@@ -4,7 +4,7 @@ This is a chirpstack integration for MongoDB, written in nodejs.
 It has been written to connect [Kano](https://kalisio.github.io/kano/) to [Chirpstack](https://github.com/chirpstack/). But it
 can be used in more general purpose (without Kano) because it is finally "just" an chirpstack integration that write GeoJSON in the mongDB.
 
-## Description
+## Description
 
 The microservice has a main loop and the following steps are performed:
 
@@ -16,7 +16,7 @@ The microservice has a main loop and the following steps are performed:
 > [!IMPORTANT]
 > For the moment only event with type `up` are handled. Event like `log`, `join` and other are not handled.
 
-## Data model
+## Data model
 
 The micro service **doesn't convert all the protobuf messages** to geoJSON. This is a conscious choice to keep only
 what is interesting to display in Kano.
@@ -68,7 +68,7 @@ and the `laeq` value returned by the sensor.
 ```
    
 
-## build
+## build
 
 A shell script `build.sh` is provided to aggregate command to build and push on the kalisio Harbor.
 
@@ -76,7 +76,7 @@ A shell script `build.sh` is provided to aggregate command to build and push on 
 ./build.sh
 ```
 
-## debugging
+## debugging
 
 To debug the microservice, it could be run directly on the cluster just using two port forwards.
 The following command will redirect Redis and Mongodb ports, so you can run locally in your debugger
