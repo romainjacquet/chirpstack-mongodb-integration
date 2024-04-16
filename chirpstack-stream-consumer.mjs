@@ -134,7 +134,16 @@ class UplinkEventAdapter {
    */
   constructor(user, password, host, port, database) {  
     // FIXME: hard-coded value for the moment, replace by API gPRC calls
-    this.GWMap = {'24e124fffef460b4': {"lat": 43.600443297757835, "lon": 1.419038772583008}};
+    this.GWMap = {
+      '24e124fffef460b4': {
+        "lat": 43.600443297757835, 
+        "lon": 1.419038772583008, 
+        "desc": "MileSight GW (Romain)"},
+      '0016c001f10fca1d':  {
+        "lat": 43.5781632, 
+        "lon": 1.4516224, 
+        "desc": "RaspBerry DIY GW (Adrien)"}
+      };
     this.devicesEUID = ['24e124136d490175', '	24e124743d429065'];
     this.mongoURI = `mongodb://${user}:${password}@${host}:${port}/${database}`;
     this.mongoDB = database;
@@ -259,35 +268,36 @@ class UplinkEventAdapter {
   }
 
   /**
-   * Mock waiting a more complete system, create a gateway in the collection option
+   * Mock waiting a more complete system, create gateways from the collection options
    * 
    */
-  async initialize(){
-    assert(Object.keys(this.GWMap).length == 1);
+  async initialize(){    
     let gwEuid = Object.keys(this.GWMap)[0];
     const client = new MongoClient(this.mongoURI);
     
     try {
-        await client.connect();
-        const db = client.db(this.mongoDB);                
-        const collection = db.collection(this.stationsCollection);
-        // check if stations exists
-        let result = await collection.findOne({"properties.euid": gwEuid});
-        if(!result){
-          let geoJson = {
-            type: 'Feature',
-            geometry: {
-              type: "Point",
-              coordinates: [this.GWMap[gwEuid].lon, this.GWMap[gwEuid].lat],
-            },      
-            properties: {
-              euid: gwEuid,
-              "gw_euid": gwEuid,
-              name: "MileSight GW"
-            }
-          }
-          await collection.insertOne(geoJson);
-          console.log(`Gateway inserted successfully into ${this.stationsCollection}`);
+          for(const gatewayId in this.GWMap){
+            await client.connect();
+            const db = client.db(this.mongoDB);                
+            const collection = db.collection(this.stationsCollection);
+            // check if stations exists
+            let result = await collection.findOne({"properties.euid": gatewayId});
+            if(!result){
+              let geoJson = {
+                type: 'Feature',
+                geometry: {
+                  type: "Point",
+                  coordinates: [this.GWMap[gatewayId].lon, this.GWMap[gatewayId].lat],
+                },      
+                properties: {
+                  euid: gatewayId,
+                  "gw_euid": gatewayId,
+                  name: this.GWMap[gatewayId].desc
+                }
+              }
+              await collection.insertOne(geoJson);
+              console.log(`Gateway (${gatewayId}) inserted successfully into ${this.stationsCollection}`);
+              }            
         }
         
     } catch (error) {
