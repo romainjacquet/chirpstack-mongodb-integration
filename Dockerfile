@@ -4,7 +4,7 @@ FROM node:18
 WORKDIR /app
 
 COPY package*.json ./
-RUN mkdir ./proto
+RUN mkdir ./proto ./config
 COPY proto/ ./proto
 RUN npm install
 

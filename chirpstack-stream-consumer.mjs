@@ -8,7 +8,7 @@ const { load, Root, util } = pkg;
 import { program, Option } from 'commander';
 import { assert } from 'console';
 import { MongoClient } from 'mongodb';
-
+import { readFileSync } from 'fs';
 
 // TODO: put it in a dedicated class
 class ChirpstackEvent {
@@ -132,19 +132,9 @@ class UplinkEventAdapter {
    * @param {number} port 
    * @param {string} mongoDB database name
    */
-  constructor(user, password, host, port, database) {  
+  constructor(user, password, host, port, database, gatewayMap) {  
     // FIXME: hard-coded value for the moment, replace by API gPRC calls
-    this.GWMap = {
-      '24e124fffef460b4': {
-        "lat": 43.600443297757835, 
-        "lon": 1.419038772583008, 
-        "desc": "MileSight GW (Romain)"},
-      '0016c001f10fca1d':  {
-        "lat": 43.5781632, 
-        "lon": 1.4516224, 
-        "desc": "RaspBerry DIY GW (Adrien)"}
-      };
-    this.devicesEUID = ['24e124136d490175', '	24e124743d429065'];
+    this.GWMap = gatewayMap;        
     this.mongoURI = `mongodb://${user}:${password}@${host}:${port}/${database}`;
     this.mongoDB = database;
     this.observationsCollection = "chirpstack-observations";
@@ -314,7 +304,7 @@ program
   .description(`Chirp stack stream consumer. 
   Collect events from chirpstack and write to mongoDB
   It's not recommanded to use command line switches for passwords.`)
-  .option('-h, --help', 'display help')
+  .usage('CLI help')
   .option('-v, --verbose', 'verbose output to troubleshoot')
   .addOption(new Option('--redisHost <host>', 'redis hostname').env("REDIS_HOST").default('localhost', 'localhost'))
   .addOption(new Option('--redisPort <port>', 'redis port')
@@ -329,12 +319,22 @@ program
     .env('MONGO_PORT').argParser(parseInt).default(27017, 'mongo DB default port 27017'))
   .addOption(new Option('--mongoHost <host>', 'mongo host ')
     .env('MONGO_HOST').default('localhost', 'localhost'))
+  .addOption(new Option('--configFile <config_file>', 'configuration file for the microservice').env('CONFIG_FILE').makeOptionMandatory(true))
   .parse(process.argv);
 
 const options = program.opts();
 
 if (options.verbose) {
   console.log('Debug mode enabled');
+}
+// parsing config file to read the gateways
+try {
+  const data = readFileSync(options.configFile, 'utf8');  
+  var gatewayConfiguration = JSON.parse(data);
+} catch (err) {
+  console.error(`Error read config file ${options.configFile}: ${err}`);
+  console.error("Exiting.")
+  process.exit(0);
 }
 
 if (options.help) {
@@ -371,7 +371,8 @@ let adapter = new UplinkEventAdapter(
   options.mongoPassword, 
   options.mongoHost, 
   options.mongoPort, 
-  options.mongoDB);
+  options.mongoDB,
+  gatewayConfiguration);
 if(options.cleanMongoDB){
   console.log("Clean existing observations in MongoDB");
   await adapter.deleteCollection(adapter.observationsCollection);
