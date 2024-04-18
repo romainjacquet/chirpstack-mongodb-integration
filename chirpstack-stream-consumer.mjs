@@ -4,6 +4,7 @@
 
 import { createClient, commandOptions } from 'redis';
 import { program, Option } from 'commander';
+import { assert } from 'console';
 
 // local import
 import mongoDBManager from './mongodbManager.mjs';
@@ -60,7 +61,7 @@ mongoDBManager.setDBInfo(
   options.mongoPassword
 );
 gatewayManager.setServerInfo(options.gRPCServer, options.apiToken)
-gatewayManager.initialize();
+await gatewayManager.initialize();
 await mongoDBManager.syncStations(gatewayManager.gateways);
 
 if(options.cleanMongoDB){
@@ -69,6 +70,8 @@ if(options.cleanMongoDB){
   await mongoDBManager.deleteCollection(mongoDBManager.stationsCollection);
 }
 
+assert(gatewayManager.gateways !== null); 
+assert(Object.keys(gatewayManager.gateways).length > 0);
 let adapter = new UplinkEventAdapter(gatewayManager.gateways);  
 
 // connect to REDIS stream

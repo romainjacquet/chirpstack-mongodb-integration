@@ -81,7 +81,8 @@ class GatewayManager {
         }catch(error){
             console.log("Gateway manager initialization failure: "+error);
         }
-        
+        let gwCount = Object.keys(this.gateways).length;
+        console.log(`${gwCount} gateway(s) have been discovered with gRPC call.`)
         return this.gateways;        
     }
 
