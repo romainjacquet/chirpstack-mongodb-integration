@@ -6,12 +6,18 @@ import gw_pb_pkg from '@chirpstack/chirpstack-api/api/gateway_pb.js';
  * Retrieves the gateway using gRPC API of chirpstack.
  */
 class GatewayManager {
+    /**     
+     * Set default value for the fields
+     * Initialization is done after, with the initialize method.
+     * @param {*} server 
+     * @param {*} api_token 
+     */
     GatewayManager(server, api_token){
         this.server = server;
         this.api_token = apiToken;
         this.metadata = new Metadata();
         this.metadata.set("authorization", "Bearer " + apiToken);
-        this.gateways = {}; // will be filled after
+        this.gateways = {}; // will be filled during initialization
     }
 
     /**
@@ -61,15 +67,16 @@ class GatewayManager {
      * @returns gateway list
      */
     async initialize(){
-        let myPromise = this._wrap_gRPCCall();
-        let gwList = await myPromise.then(
-            function(value) { return value;}
-        ).catch(
-            function(error) {console.error(error);}
-        );
-        this.gateways = gwList;        
-        return gwList;
+        try{
+            this.gateways = await this._wrap_gRPCCall();
+        }catch(error){
+            console.log("Failed to initialized."+error);
+        }
+        
+        return this.gateways;        
     }
+
+    
 }
 
 // This must point to the ChirpStack API interface.
