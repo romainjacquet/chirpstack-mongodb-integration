@@ -13,6 +13,8 @@ The microservice has a main loop and the following steps are performed:
   * convert this events to geojson
   * write to mongo DB in a collection called `chirpstack-observations`
 
+![Chripstack](/schemas/chirpstack-mongodb-integration.drawio.png)
+
 > [!IMPORTANT]
 > For the moment only event with type `up` are handled. Event like `log`, `join` and other are not handled.
 
