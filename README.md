@@ -21,7 +21,7 @@ The microservice has a main loop and the following steps are performed:
 ## installation
 
 It's possible to use the docker image: `kalisio/chirpstack-mongodb-integration:latest`.
-> [!IMPORTANT]
+> [!NOTE]
 > Latest is a rotating image, so update could occured.
 
 ```console
@@ -34,7 +34,7 @@ npm install package.json
 node ./chirpstack-stream-consumer.mjs
 ```
 
-## usage 
+## usage 
 
 ```
 Usage: chirpstack-stream-consumer CLI help
@@ -143,3 +143,4 @@ Consider the following list as potential futures evolutions:
   * add a TTL support for the observations collection
   * have a more complete support for events. `Join` and `Status`are interesting
   * add tests for the project
+  * add CI and fix version image
