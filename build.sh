@@ -2,7 +2,7 @@
 # build the image and push to minikube cluster
 # definitions
 IMAGE_REPOSITORY="harbor.portal.kalisio.com"
-IMAGE_NAME="kalisio/chirpstack-kano-integration"
+IMAGE_NAME="kalisio/chirpstack-mongodb-integration"
 IMAGE_TAG=latest
 IMAGE_TMP_TARBALL="/tmp/image.tar"
 

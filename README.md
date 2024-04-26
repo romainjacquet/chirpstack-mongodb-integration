@@ -18,6 +18,49 @@ The microservice has a main loop and the following steps are performed:
 > [!IMPORTANT]
 > For the moment only event with type `up` are handled. Event like `log`, `join` and other are not handled.
 
+## installation
+
+It's possible to use the docker image: `kalisio/chirpstack-mongodb-integration:latest`.
+> [!IMPORTANT]
+> Latest is a rotating image, so update could occured.
+
+```console
+docker run -it harbor.portal.kalisio.com/kalisio/chirpstack-mongodb-integration:latest /app/chirpstack-stream-consumer.mjs --help
+```
+
+It's also possible to install from source easily.
+```shell
+npm install package.json
+node ./chirpstack-stream-consumer.mjs
+```
+
+## usage 
+
+```
+Usage: chirpstack-stream-consumer CLI help
+
+Chirp stack stream consumer. 
+  Collect events from chirpstack and write to mongoDB
+  It's not recommanded to use command line switches for passwords.
+
+Options:
+  -v, --verbose               verbose output to troubleshoot
+  --redisHost <host>          redis hostname (default: localhost, env: REDIS_HOST)
+  --redisPort <port>          redis port (default: standard redis port 6379, env: REDIS_PORT)
+  --redisPassword <password>  redis password (env: REDIS_PASSWORD)
+  --disableWrite              don't push to mongo DB (default: false, env: DISABLE_WRITE)
+  --cleanMongoDB              delete object from the chirpstack collections (default: false, env: MONGO_CLEAN)
+  --mongoDB <DB>              mongo db name (default: kano database is used, env: MONGO_DB_NAME)
+  --mongoUser <user>          mongo user name (env: MONGO_USER)
+  --mongoPassword <password>  mongo password (env: MONGO_PASSWORD)
+  --mongoPort <port>          mongo port (default: mongo DB default port 27017, env: MONGO_PORT)
+  --mongoHost <host>          mongo host  (default: localhost, env: MONGO_HOST)
+  --gRPCServer <host>         host for gRPC calls, 127.0.0.1:8080  (default: localhost, env: GRPC_SERVER)
+  --apiToken <token>          token for gRPC calls  (env: GRPC_TOKEN)
+  -h, --help                  display help for command
+
+```
+
 ### detailled description
 
 | File                           | Description                                                                                                                                            |
@@ -81,47 +124,6 @@ and the `laeq` value returned by the sensor.
 }
 ```
 
-
-   
-## installation
-
-It's possible to install from source easily.
-```shell
-npm install package.json
-node ./chirpstack-stream-consumer.mjs
-```
-
-It's also possible to use the docker image: `kalisio/chirpstack-kano-integration:latest`.
-> [!IMPORTANT]
-> Latest is a rotating image, so update could occured.
-
-## usage 
-
-```
-Usage: chirpstack-stream-consumer CLI help
-
-Chirp stack stream consumer. 
-  Collect events from chirpstack and write to mongoDB
-  It's not recommanded to use command line switches for passwords.
-
-Options:
-  -v, --verbose               verbose output to troubleshoot
-  --redisHost <host>          redis hostname (default: localhost, env: REDIS_HOST)
-  --redisPort <port>          redis port (default: standard redis port 6379, env: REDIS_PORT)
-  --redisPassword <password>  redis password (env: REDIS_PASSWORD)
-  --disableWrite              don't push to mongo DB (default: false, env: DISABLE_WRITE)
-  --cleanMongoDB              delete object from the chirpstack collections (default: false, env: MONGO_CLEAN)
-  --mongoDB <DB>              mongo db name (default: kano database is used, env: MONGO_DB_NAME)
-  --mongoUser <user>          mongo user name (env: MONGO_USER)
-  --mongoPassword <password>  mongo password (env: MONGO_PASSWORD)
-  --mongoPort <port>          mongo port (default: mongo DB default port 27017, env: MONGO_PORT)
-  --mongoHost <host>          mongo host  (default: localhost, env: MONGO_HOST)
-  --gRPCServer <host>         host for gRPC calls, 127.0.0.1:8080  (default: localhost, env: GRPC_SERVER)
-  --apiToken <token>          token for gRPC calls  (env: GRPC_TOKEN)
-  -h, --help                  display help for command
-
-```
-
 ## build docker images
 
 A shell script `build.sh` is provided to aggregate command to build and push on the kalisio Harbor.
@@ -129,7 +131,6 @@ A shell script `build.sh` is provided to aggregate command to build and push on 
 ```shell
 ./build.sh
 ```
-
 
 ## roadmap
 
@@ -141,5 +142,4 @@ Consider the following list as potential futures evolutions:
   * add a support for tenant. The idea behind is to separate the storage of the different data in different database. To isolate data that can come from different users.
   * add a TTL support for the observations collection
   * have a more complete support for events. `Join` and `Status`are interesting
-
-
+  * add tests for the project
