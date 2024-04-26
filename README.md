@@ -18,7 +18,7 @@ The microservice has a main loop and the following steps are performed:
 > [!IMPORTANT]
 > For the moment only event with type `up` are handled. Event like `log`, `join` and other are not handled.
 
-### detailled description
+### detailled description
 
 | File                           | Description                                                                                                                                            |
 |--------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
