@@ -144,3 +144,12 @@ Consider the following list as potential futures evolutions:
   * have a more complete support for events. `Join` and `Status`are interesting
   * add tests for the project
   * add CI and fix version image
+
+## context
+
+This chart has been written to display LoraWAN data in [Kano](https://github.com/kalisio/kano), a data explorer in 2D/3D.
+Data management is done with [Chirpstack](https://www.chirpstack.io/), a popular LoraWAN network server.
+
+![Chirpstack](/pictures/chirpstack-temperature.png)
+
+This is part of R&D of Kalisio.
