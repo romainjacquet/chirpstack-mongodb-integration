@@ -139,6 +139,7 @@ Consider the following list as potential futures evolutions:
   * use a logging service like [winston](https://github.com/winstonjs/winston) 
   * use a JSON config file to replace too many command line opions. Probable use of [config](https://www.npmjs.com/package/config)
   * add a support for tenant. The idea behind is to separate the storage of the different data in different database. To isolate data that can come from different users.
+  * add a TTL support for the observations collection
   * have a more complete support for events. `Join` and `Status`are interesting
 
 
