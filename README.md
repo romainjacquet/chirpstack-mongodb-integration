@@ -18,6 +18,18 @@ The microservice has a main loop and the following steps are performed:
 > [!IMPORTANT]
 > For the moment only event with type `up` are handled. Event like `log`, `join` and other are not handled.
 
+### detailled description
+
+| File                           | Description                                                                                                                                            |
+|--------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------|
+| chirpstack-stream-consumer.mjs | main entry point   * read configuration from command line and environment variable  * instanciate objects  * main loop waiting for read stream events  |
+| chirpstack-events.mjs          | decode event from protobuf                                                                                                                             |
+| gatewaymanager.mjs             | fetch info about gateways from gRPC API                                                                                                                |
+| mongodbManager.mjs             | common operation to mongodo; delete, insert, synchronize                                                                                               |
+| uplinkeventadapter.mjs         | create the geosjon feature                                                                                                                             |
+
+The folder proto contains the protobuf description coming from the official chirstack repo.
+
 ## Data model
 
 The micro service **doesn't convert all the protobuf messages** to geoJSON. This is a conscious choice to keep only
@@ -78,14 +90,15 @@ A shell script `build.sh` is provided to aggregate command to build and push on 
 ./build.sh
 ```
 
-## debugging
 
-To debug the microservice, it could be run directly on the cluster just using two port forwards.
-The following command will redirect Redis and Mongodb ports, so you can run locally in your debugger
-the microservice as it was running in k8s cluster.
+## roadmap
 
-```shell
-kubectl port-forward svc/redis-master 6379:6379
-kubectl port-forward svc/mongodb 27017:27017
-```
+As the micro-service is in its early stages, some point can be improved.
+Consider the following list as potential futures evolutions:
+
+  * use a logging service like [winston](https://github.com/winstonjs/winston) 
+  * use a JSON config file to replace too many command line opions. Probable use of [config](https://www.npmjs.com/package/config)
+  * add a support for tenant. The idea behind is to separate the storage of the different data in different database. To isolate data that can come from different users.
+  * have a more complete support for events. `Join` and `Status`are interesting
+
 
