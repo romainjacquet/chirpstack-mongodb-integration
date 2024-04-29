@@ -1,6 +1,6 @@
 # MongoDB integration for Chirpstack
 
-This is a chirpstack integration for MongoDB, written in nodejs.
+This is a [chirpstack](https://www.chirpstack.io/) integration for MongoDB, written in nodejs.
 It has been written to connect [Kano](https://kalisio.github.io/kano/) to [Chirpstack](https://github.com/chirpstack/). But it
 can be used in more general purpose (without Kano) because it is finally "just" an chirpstack integration that write GeoJSON in the mongDB.
 
@@ -16,7 +16,7 @@ The microservice has a main loop and the following steps are performed:
 ![Chripstack](/schemas/chirpstack-mongodb-integration.drawio.png)
 
 > [!IMPORTANT]
-> For the moment only event with type `up` are handled. Event like `log`, `join` and other are not handled.
+> For the moment only event with type `up` are handled. Event like `log`, `join` and other are not handled (full list of events are visible [here](https://www.chirpstack.io/docs/chirpstack/integrations/events.html)).
 
 ## installation
 
@@ -152,4 +152,4 @@ Data management is done with [Chirpstack](https://www.chirpstack.io/), a popular
 
 ![Chirpstack](/pictures/chirpstack-temperature.png)
 
-This is part of R&D of Kalisio.
+This is part of R&D of [Kalisio](https://kalisio.com/).
