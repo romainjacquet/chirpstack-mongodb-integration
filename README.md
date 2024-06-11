@@ -124,6 +124,12 @@ and the `laeq` value returned by the sensor.
 }
 ```
 
+> [!IMPORTANT]
+> The micro service has no codec notion and it make a copy all the fields of the object, in the properties field.
+> It means that if the values are not scalar but object, the value associated with this field is `null`.
+
+
+
 ## build docker images
 
 A shell script `build.sh` is provided to aggregate command to build and push on the kalisio Harbor.
