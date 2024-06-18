@@ -8,7 +8,7 @@ RUN mkdir ./proto ./config
 COPY proto/ ./proto
 RUN npm install
 
-COPY *.mjs .
+COPY *.mjs ./
 
 # Specify the entry point command
 CMD ["node", "chirpstack-stream-consumer.mjs"]
