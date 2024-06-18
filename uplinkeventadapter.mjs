@@ -42,6 +42,10 @@ export class UplinkEventAdapter {
         properties: {
           euid: jsChirpEvent.deviceInfo.devEui,
           name: jsChirpEvent.deviceInfo.deviceName,
+          app_id: jsChirpEvent.deviceInfo.applicationId,
+          app_name: jsChirpEvent.deviceInfo.applicationName,
+          tenant_id: jsChirpEvent.deviceInfo.tenantId,
+          tenant_name: jsChirpEvent.deviceInfo.tenantName,
           gw_euid: gatewayId
         },
         time: observationDatetime

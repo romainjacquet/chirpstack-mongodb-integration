@@ -106,7 +106,8 @@ This is an example of a station, a MileSight gateway:
 ```
 
 Below is an example of an observation for a sound sensor. Note the additionnal time field
-and the `laeq` value returned by the sensor.
+and the `laeq` value returned by the sensor. Note that we also information related to the
+tenant and the application.
 ```json
 {
   "type": "Feature",
@@ -117,6 +118,10 @@ and the `laeq` value returned by the sensor.
   "properties": {
     "euid": "24e124743d429065",
     "name": "ABP-soundSensor",
+    "app_id": "03fa133f-d68c-4aee-94c2-ab63874c3d26",
+    "app_name": "KalisioMap",
+    "tenant_id": "52f14cd4-c6f1-4fbd-8f87-4025e1d49242",
+    "tenant_name": "ChirpStack",
     "gw_euid": "24e124fffef460b4",
     "laeq": 42.9
   },
@@ -151,11 +156,45 @@ Consider the following list as potential futures evolutions:
   * add tests for the project
   * add CI and fix version image
 
+## development
+
+The easiest  way to develop is:
+  * running locally the microservice, to be able to debug with **code**
+  * use a remote redis configuration and remote GRPC configuration, with a real chirpstack platform
+  * use a local mongodb to avoid pollution on the remote mongodb. 
+
+Example of commande line:
+```shell
+node ./chirpstack-stream-consumer.mjs --redisPassword MYREDISPWD \
+--gRPCServer localhost:8080  --apiToken MYTOKEN \
+--mongoUser chirpstack --mongoPassword chirpstack
+```
+
+A simple docker compose can be used:
+```yaml
+version: '3.1'
+services:
+
+  mongo:
+    image: mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: toto
+    ports:
+      - 27017:27017
+    volumes:
+      - ./datadir:/data/db
+```
+
 ## context
 
-This chart has been written to display LoraWAN data in [Kano](https://github.com/kalisio/kano), a data explorer in 2D/3D.
+This microservice has been written to display LoraWAN data in [Kano](https://github.com/kalisio/kano), a data explorer in 2D/3D.
 Data management is done with [Chirpstack](https://www.chirpstack.io/), a popular LoraWAN network server.
 
 ![Chirpstack](/pictures/chirpstack-temperature.png)
 
 This is part of R&D of [Kalisio](https://kalisio.com/).
+
+
+
