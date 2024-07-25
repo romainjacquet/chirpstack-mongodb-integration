@@ -62,7 +62,7 @@ await gatewayManager.initialize()
 await mongoDBManager.syncStations(gatewayManager.gateways)
 
 if (options.cleanMongoDB) {
-  console.log('Clean existing observations in MongoDB')
+  console.log('Clean existing observations and stations in MongoDB')
   await mongoDBManager.deleteCollection(mongoDBManager.observationsCollection)
   await mongoDBManager.deleteCollection(mongoDBManager.stationsCollection)
 }

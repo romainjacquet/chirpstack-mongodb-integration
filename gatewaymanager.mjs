@@ -15,6 +15,8 @@ class GatewayManager {
     this.apiToken = ''
     this.metadata = new Metadata()
     this.gateways = {} // will be filled during initialization
+    this.initial_backoff = 10 // value in seconds
+    this.maximum_backoff = 100 // values in seconds
   }
 
   /**
@@ -70,18 +72,33 @@ class GatewayManager {
   }
 
   /**
-     *
+     * Try to get the gateway list from gRPC
+     * If failed sleep and retry until the maximum backoff time is reached.
      * @returns gateway list
      */
   async initialize () {
-    try {
-      this.gateways = await this._wrap_gRPCCall()
-    } catch (error) {
-      console.log('Gateway manager initialization failure: ' + error)
+    let sleep_time = this.initial_backoff
+    while(sleep_time < this.maximum_backoff){
+      try {
+        this.gateways = await this._wrap_gRPCCall()
+      } catch (error) {
+        console.log('Gateway manager initialization failure: ' + error)
+      }
+      const gwCount = Object.keys(this.gateways).length
+      if(gwCount > 0){
+        console.log(`${gwCount} gateway(s) have been discovered with gRPC call.`)
+        return this.gateways
+      } else {
+        const sleep = (ms) => {
+          return new Promise(resolve => setTimeout(resolve, ms));
+        };
+        await sleep(sleep_time * 1000);
+        sleep_time = sleep_time * 2
+        console.log(`Time before next retry to gRPC ${sleep_time} seconds.`)
+      }
     }
-    const gwCount = Object.keys(this.gateways).length
-    console.log(`${gwCount} gateway(s) have been discovered with gRPC call.`)
-    return this.gateways
+    console.log('No gateway has been discovered. Stopping the service.')
+    process.exit(1)
   }
 }
 
