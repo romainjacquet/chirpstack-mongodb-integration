@@ -3,8 +3,11 @@
  */
 
 import { createClient, commandOptions } from 'redis'
-import { program, Option } from 'commander'
+import { Command, Option } from 'commander'
 import { assert } from 'console'
+import { resolve } from 'path'
+import { readFileSync } from 'fs'
+
 
 // local import
 import mongoDBManager from './mongodbManager.mjs'
@@ -13,32 +16,16 @@ import ChirpstackEvent from './chirpstack-events.mjs'
 import { UplinkEventAdapter } from './uplinkeventadapter.mjs'
 
 // CLi parsing
+const program = new Command()
 program
-  .description(`Chirp stack stream consumer. 
-  Collect events from chirpstack and write to mongoDB
-  It's not recommanded to use command line switches for passwords.`)
+  .description(`Chirp stack stream consumer.
+  Collect events from chirpstack and write to mongoDB.`)
   .usage('CLI help')
-  .option('-v, --verbose', 'verbose output to troubleshoot')
-  .addOption(new Option('--redisHost <host>', 'redis hostname').env('REDIS_HOST').default('localhost', 'localhost'))
-  .addOption(new Option('--redisPort <port>', 'redis port')
-    .argParser(parseInt).env('REDIS_PORT').default('6379', 'standard redis port 6379'))
-  .addOption(new Option('--redisPassword <password>', 'redis password').env('REDIS_PASSWORD'))
-  .addOption(new Option('--disableWrite', 'don\'t push to mongo DB').env('DISABLE_WRITE').default(false))
-  .addOption(new Option('--cleanMongoDB', 'delete object from the chirpstack collections').env('MONGO_CLEAN').default(false))
-  .addOption(new Option('--mongoDB <DB>', 'mongo db name').env('MONGO_DB_NAME').default('kano', 'kano database is used'))
-  .addOption(new Option('--mongoUser <user>', 'mongo user name').env('MONGO_USER'))
-  .addOption(new Option('--mongoPassword <password>', 'mongo password').env('MONGO_PASSWORD'))
-  .addOption(new Option('--mongoPort <port>', 'mongo port')
-    .env('MONGO_PORT').argParser(parseInt).default(27017, 'mongo DB default port 27017'))
-  .addOption(new Option('--mongoHost <host>', 'mongo host ')
-    .env('MONGO_HOST').default('localhost', 'localhost'))
-  .addOption(new Option('--gRPCServer <host>', 'host for gRPC calls, 127.0.0.1:8080 ')
-    .env('GRPC_SERVER').default('localhost', 'localhost'))
-  .addOption(new Option('--apiToken <token>', 'token for gRPC calls ')
-    .env('GRPC_TOKEN').makeOptionMandatory())
+  .addOption(new Option('-c, --config <config>', 'path to a JSON config file. ').env('MICROSERVICE_CONFIG_FILE').default( './config.json', 'default config file'))
   .parse(process.argv)
 
-const options = program.opts()
+const program_options = program.opts()
+const options = JSON.parse(readFileSync(program_options.config, 'utf8'));
 
 if (options.verbose) {
   console.log('Debug mode enabled')

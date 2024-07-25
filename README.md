@@ -34,32 +34,41 @@ npm install package.json
 node ./chirpstack-stream-consumer.mjs
 ```
 
-## usage 
+## usage
 
-```
+```shell
 Usage: chirpstack-stream-consumer CLI help
 
-Chirp stack stream consumer. 
-  Collect events from chirpstack and write to mongoDB
-  It's not recommanded to use command line switches for passwords.
+Chirp stack stream consumer.
+  Collect events from chirpstack and write to mongoDB.
 
 Options:
-  -v, --verbose               verbose output to troubleshoot
-  --redisHost <host>          redis hostname (default: localhost, env: REDIS_HOST)
-  --redisPort <port>          redis port (default: standard redis port 6379, env: REDIS_PORT)
-  --redisPassword <password>  redis password (env: REDIS_PASSWORD)
-  --disableWrite              don't push to mongo DB (default: false, env: DISABLE_WRITE)
-  --cleanMongoDB              delete object from the chirpstack collections (default: false, env: MONGO_CLEAN)
-  --mongoDB <DB>              mongo db name (default: kano database is used, env: MONGO_DB_NAME)
-  --mongoUser <user>          mongo user name (env: MONGO_USER)
-  --mongoPassword <password>  mongo password (env: MONGO_PASSWORD)
-  --mongoPort <port>          mongo port (default: mongo DB default port 27017, env: MONGO_PORT)
-  --mongoHost <host>          mongo host  (default: localhost, env: MONGO_HOST)
-  --gRPCServer <host>         host for gRPC calls, 127.0.0.1:8080  (default: localhost, env: GRPC_SERVER)
-  --apiToken <token>          token for gRPC calls  (env: GRPC_TOKEN)
-  -h, --help                  display help for command
-
+  -c, --config <config>  path to a JSON config file.  (default: default config file, env:
+                         MICROSERVICE_CONFIG_FILE)
+  -h, --help             display help for command
 ```
+
+## Config file options
+
+
+The micro service is configured using a json file, the default file is `config.json`.
+
+| Option         | Default Value | Help                                           |
+| ---            | ---           | ---                                            |
+| verbose        | false         | Verbose output to troubleshoot                 |
+| redisHost      | localhost     | Redis hostname                                 |
+| redisPort      | 6379          | Redis port                                     |
+| redisPassword  |               | Redis password                                 |
+| disableWrite   | false         | Don't push to MongoDB                          |
+| cleanMongoDB   | false         | Delete objects from Chirpstack collections     |
+| mongoDB        | kano          | MongoDB name                                   |
+| mongoUser      |               | Mongo user name                                |
+| mongoPassword  |               | Mongo password                                 |
+| mongoPort      | 27017         | Mongo port                                     |
+| mongoHost      | localhost     | Mongo host                                     |
+| gRPCServer     | 127.0.0.1:8080| Host for gRPC calls                            |
+| apiToken       |               | Token for gRPC calls                           |
+
 
 ### detailled description
 
@@ -85,10 +94,10 @@ Data are written as GeoJSON features in two collections:
   one message in LoRa will result in many observations.
 
 The link between the two collections is done using the attributes `properties.gw_euid` which is close to the gateway id in the
-lora protocol. 
+lora protocol.
 
 > [!NOTE]
-> For the `chirpstack-observations` an extra field time is needed to have varying-time data. 
+> For the `chirpstack-observations` an extra field time is needed to have varying-time data.
 
 This is an example of a station, a MileSight gateway:
 ```json
@@ -148,20 +157,20 @@ A shell script `build.sh` is provided to aggregate command to build and push on 
 As the micro-service is in its early stages, some point can be improved.
 Consider the following list as potential futures evolutions:
 
-  * use a logging service like [winston](https://github.com/winstonjs/winston) 
-  * use a JSON config file to replace too many command line opions. Probable use of [config](https://www.npmjs.com/package/config)
-  * add a support for tenant. The idea behind is to separate the storage of the different data in different database. To isolate data that can come from different users.
-  * add a TTL support for the observations collection
-  * have a more complete support for events. `Join` and `Status`are interesting
-  * add tests for the project
-  * add CI and fix version image
+  * [ ] use a logging service like [winston](https://github.com/winstonjs/winston)
+  * [X] use a JSON config file to replace too many command line opions. Probable use of [config](https://www.npmjs.com/package/config)
+  * [ ] add a support for tenant. The idea behind is to separate the storage of the different data in different database. To isolate data that can come from different users.
+  * [ ] add a TTL support for the observations collection
+  * [ ] have a more complete support for events. `Join` and `Status`are interesting
+  * [ ] add tests for the project
+  * [ ] add CI and fix version image
 
 ## development
 
 The easiest  way to develop is:
   * running locally the microservice, to be able to debug with **code**
   * use a remote redis configuration and remote GRPC configuration, with a real chirpstack platform
-  * use a local mongodb to avoid pollution on the remote mongodb. 
+  * use a local mongodb to avoid pollution on the remote mongodb.
 
 Example of commande line:
 ```shell
@@ -195,6 +204,3 @@ Data management is done with [Chirpstack](https://www.chirpstack.io/), a popular
 ![Chirpstack](/pictures/chirpstack-temperature.png)
 
 This is part of R&D of [Kalisio](https://kalisio.com/).
-
-
-
