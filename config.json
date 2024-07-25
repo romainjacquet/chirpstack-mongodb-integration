@@ -1,0 +1,15 @@
+{
+    "verbose": false,
+    "redisHost": "localhost",
+    "redisPort": 6379,
+    "redisPassword": "",
+    "disableWrite": false,
+    "cleanMongoDB": false,
+    "mongoDB": "kano",
+    "mongoUser": "",
+    "mongoPassword": "",
+    "mongoPort": 27017,
+    "mongoHost": "localhost",
+    "gRPCServer": "127.0.0.1:8080",
+    "apiToken": ""
+  }
