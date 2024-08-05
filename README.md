@@ -1,5 +1,9 @@
 # MongoDB integration for Chirpstack
 
+> [!CAUTION]
+> This repository is no longer used. It has been moved to [Kalisio/chirpstack-mongodb-integration](https://github.com/kalisio/chirpstack-mongodb-integration).
+> Please use the new repository address.
+
 This is a [chirpstack](https://www.chirpstack.io/) integration for MongoDB, written in nodejs.
 It has been written to connect [Kano](https://kalisio.github.io/kano/) to [Chirpstack](https://github.com/chirpstack/). But it
 can be used in more general purpose (without Kano) because it is finally "just" an chirpstack integration that write GeoJSON in the mongDB.
