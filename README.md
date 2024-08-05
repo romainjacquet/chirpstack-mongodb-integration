@@ -55,7 +55,6 @@ The micro service is configured using a json file, the default file is `config.j
 
 | Option         | Default Value | Help                                           |
 | ---            | ---           | ---                                            |
-| verbose        | false         | Verbose output to troubleshoot                 |
 | redisHost      | localhost     | Redis hostname                                 |
 | redisPort      | 6379          | Redis port                                     |
 | redisPassword  |               | Redis password                                 |
@@ -66,9 +65,9 @@ The micro service is configured using a json file, the default file is `config.j
 | mongoPassword  |               | Mongo password                                 |
 | mongoPort      | 27017         | Mongo port                                     |
 | mongoHost      | localhost     | Mongo host                                     |
-| gRPCServer     | 127.0.0.1:8080| Host for gRPC calls                            |
-| apiToken       |               | Token for gRPC calls                           |
-
+| gRPCServer     | 127.0.0.1:8080| Host for gRPC calls (chirpstack server)        |
+| apiToken       |               | Token for gRPC calls (found in chirpstack UI)  |
+| logLevel       | info          | info, error, warn (see [Winston doc](https://github.com/winstonjs/winston?tab=readme-ov-file#logging-levels))           |
 
 ### detailled description
 

@@ -2,6 +2,8 @@ import { Metadata, credentials } from '@grpc/grpc-js'
 import { GatewayServiceClient } from '@chirpstack/chirpstack-api/api/gateway_grpc_pb.js'
 import gwProtobufPkg from '@chirpstack/chirpstack-api/api/gateway_pb.js'
 
+import application from './application.mjs'
+
 /**
  * Retrieves the gateway using gRPC API of chirpstack.
  */
@@ -56,7 +58,7 @@ class GatewayManager {
         } else {
           const gatewayInfo = {}
           for (const gwItem of answer.getResultList()) {
-            console.log('euid:' + gwItem.getGatewayId())
+            application.logger.info('euid:' + gwItem.getGatewayId())
             gatewayInfo[gwItem.getGatewayId()] = {
               name: gwItem.getName(),
               desc: gwItem.getDescription(),
@@ -82,11 +84,11 @@ class GatewayManager {
       try {
         this.gateways = await this._wrap_gRPCCall()
       } catch (error) {
-        console.log('Gateway manager initialization failure: ' + error)
+        application.logger.error('Gateway manager initialization failure: ' + error)
       }
       const gwCount = Object.keys(this.gateways).length
       if(gwCount > 0){
-        console.log(`${gwCount} gateway(s) have been discovered with gRPC call.`)
+        application.logger.info(`${gwCount} gateway(s) have been discovered with gRPC call.`)
         return this.gateways
       } else {
         const sleep = (ms) => {
@@ -94,10 +96,10 @@ class GatewayManager {
         };
         await sleep(sleep_time * 1000);
         sleep_time = sleep_time * 2
-        console.log(`Time before next retry to gRPC ${sleep_time} seconds.`)
+        application.logger.info(`Time before next retry to gRPC ${sleep_time} seconds.`)
       }
     }
-    console.log('No gateway has been discovered. Stopping the service.')
+    application.logger.error('No gateway has been discovered. Stopping the service.')
     process.exit(1)
   }
 }

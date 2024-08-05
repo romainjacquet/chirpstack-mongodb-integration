@@ -7,6 +7,9 @@ import pkg from 'protobufjs'
 import { assert } from 'console'
 const { Root, util } = pkg
 
+// local imports
+import application from './application.mjs'
+
 class ChirpstackEvent {
   // a counter
   static stats =
@@ -60,7 +63,7 @@ class ChirpstackEvent {
   decodeStream (streamMessage) {
     // a message has two key id and the message
     // the message a one key per item transmitted
-    console.log('Read event: ' + streamMessage.id)
+    application.logger.info('Read event: ' + streamMessage.id)
     let eventType = null
     for (const key in streamMessage.message) {
       if (key !== 'id') {
@@ -71,9 +74,9 @@ class ChirpstackEvent {
     if (eventType == null) {
       return null
     }
-    console.log('Event Type: ' + eventType)
+    application.logger.info('Event Type: ' + eventType)
     if (!(eventType in this.eventMap)) {
-      console.log('Received unknown event:' + eventType)
+      application.logger.info('Received unknown event:' + eventType)
       return null
     }
     // check filter
@@ -92,9 +95,9 @@ class ChirpstackEvent {
       return decodedMessage
     } catch (e) {
       if (e instanceof util.ProtocolError) {
-        console.log('far decoded message with missing required fields')
+        application.logger.warn('far decoded message with missing required fields')
       } else {
-        console.log('wire format is invalid' + e)
+        application.logger.warn('wire format is invalid' + e)
         // throw e;
       }
     }
@@ -111,9 +114,9 @@ class ChirpstackEvent {
     }
 
     for (const key in ChirpstackEvent.stats) {
-      console.log(key + ' :\t\t' + ChirpstackEvent.stats[key])
+      application.logger.info(key + ' :\t\t' + ChirpstackEvent.stats[key])
     }
-    console.log(`${total} event received.`)
+    application.logger.info(`${total} event received.`)
   }
 }
 

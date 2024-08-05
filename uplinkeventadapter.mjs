@@ -21,7 +21,7 @@ export class UplinkEventAdapter {
     // get location to check if the gateway is registered
     const gwEuid = jsChirpEvent.rxInfo[0].gatewayId
     if (!(gwEuid in this.GWMap)) {
-      console.log(`Unknown gateway ${gwEuid}.`)
+      application.logger.error(`Unknown gateway ${gwEuid}.`)
       return null
     }
     const lat = this.GWMap[gwEuid].lat
@@ -73,11 +73,11 @@ export class UplinkEventAdapter {
         return protoMessage[kind]
       case 'structValue':
       case 'listValue':
-        console.log('Not currently supported')
+        application.logger.warn('Not currently supported')
         assert(false)
         break
       default:
-        console.log('Unsupported type:' + kind)
+        application.logger.warn('Unsupported type:' + kind)
         assert(false)
     }
     return null

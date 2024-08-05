@@ -4,6 +4,8 @@
 
 import { MongoClient } from 'mongodb'
 
+import application from './application.mjs'
+
 class MongoDBManager {
   /**
      * default constructor
@@ -49,9 +51,9 @@ class MongoDBManager {
 
       // delete all objects
       const result = await collection.deleteMany({})
-      console.log(`Delete ${result.deletedCount} items from ${collectionName}.`)
+      application.logger.info(`Delete ${result.deletedCount} items from ${collectionName}.`)
     } catch (error) {
-      console.error(`Error cleaning collection ${collectionName}: ${error}`)
+      application.logger.warn(`Error cleaning collection ${collectionName}: ${error}`)
     } finally {
       await client.close()
     }
@@ -66,19 +68,19 @@ class MongoDBManager {
 
     try {
       await client.connect()
-      console.log(`Connected to MongoDB ${this.dbName}`)
+      application.logger.info(`Connected to MongoDB ${this.dbName}`)
       const db = client.db(this.dbName)
       const collection = db.collection(this.observationsCollection)
 
       for (const feature of features) {
         await collection.insertOne(feature)
       }
-      console.log(`GeoJSON inserted successfully into ${this.observationsCollection}`)
+      application.logger.info(`GeoJSON inserted successfully into ${this.observationsCollection}`)
     } catch (error) {
-      console.error('Error inserting GeoJSON:', error)
+      application.logger.warn('Error inserting GeoJSON:', error)
     } finally {
       await client.close()
-      console.log('MongoDB connection closed')
+      application.logger.info('MongoDB connection closed')
     }
   }
 
@@ -111,11 +113,11 @@ class MongoDBManager {
             }
           }
           await collection.insertOne(geoJson)
-          console.log(`Gateway (${gatewayId}) inserted successfully into ${this.stationsCollection}`)
+          application.logger.info(`Gateway (${gatewayId}) inserted successfully into ${this.stationsCollection}`)
         }
       }
     } catch (error) {
-      console.error(`Error adding gateway in collection ${this.stationsCollection}: ${error}`)
+      application.logger.error(`Error adding gateway in collection ${this.stationsCollection}: ${error}`)
     } finally {
       await client.close()
     }

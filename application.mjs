@@ -5,6 +5,9 @@ import { assert } from 'console'
 import { resolve } from 'path'
 import { readFileSync } from 'fs'
 
+import winston from 'winston';
+
+
 // local imports
 import mongoDBManager from './mongodbManager.mjs'
 import gatewayManager from './gatewaymanager.mjs'
@@ -33,7 +36,7 @@ class Application {
     const adapter = new UplinkEventAdapter(gatewayManager.gateways)
 
     // connect to REDIS stream
-    console.log(`connect to ${this.options.redisHost}:${this.options.redisPort}`)
+    this.logger.info(`connect to ${this.options.redisHost}:${this.options.redisPort}`)
 
     const client = await createClient(
       {
@@ -44,14 +47,14 @@ class Application {
         password: this.options.redisPassword
       }
     )
-      .on('error', err => console.log('Redis Client Error', err))
+      .on('error', err => this.logger.error('Redis Client Error', err))
       .connect()
 
     let currentId = '0-0' // Start at lowest possible stream ID
     const streamName = 'device:stream:event'
 
     process.on('SIGINT', () => {
-      console.log('Received SIGINT signal. Shutting down...')
+      this.logger.info('Received SIGINT signal. Shutting down...')
       ChirpstackEvent.printStats()
       process.exit()
     })
@@ -86,17 +89,13 @@ class Application {
             if (!this.options.disableWrite) {
               await mongoDBManager.insertGeoJSONFeatures(features)
             }
-            if (this.options.verbose) {
-              console.log(newMessage)
-            }
+            this.logger.debug(newMessage)
           }
         } else {
-          if (this.options.verbose) {
-            console.log('No new stream entries.')
-          }
+          this.logger.debug('No new stream entries.')
         }
       } catch (err) {
-        console.error(err)
+        this.warn(err)
       }
     }
   }
@@ -117,17 +116,25 @@ class Application {
     this.program_options = program.opts()
     this.options = JSON.parse(readFileSync(this.program_options.config, 'utf8'));
 
-    if (this.options.verbose) {
-      console.log('Debug mode enabled')
-    }
-
     // display help
     if (this.options.help) {
       program.outputHelp()
       this.finalize()
     }
     // logger
-    // TODO
+    let logLevel = "info"
+    if("logLevel" in this.options && this.options.logLevel){
+        logLevel = this.options.logLevel
+    }
+    const logger = winston.createLogger({
+      level: logLevel,
+      format: winston.format.json(),
+      defaultMeta: { service: 'chirpstack-mongodb-integration' },
+      transports: [
+        new winston.transports.Console({format: winston.format.simple()}),
+      ],
+    })
+    this.logger = logger
 
     // initialization of the managers: mongoDB, gateway with gRPC
     mongoDBManager.setDBInfo(
@@ -142,14 +149,14 @@ class Application {
     await mongoDBManager.syncStations(gatewayManager.gateways)
 
     if (this.options.cleanMongoDB) {
-      console.log('Clean existing observations and stations in MongoDB')
+      logger.info('Clean existing observations and stations in MongoDB')
       await mongoDBManager.deleteCollection(mongoDBManager.observationsCollection)
       await mongoDBManager.deleteCollection(mongoDBManager.stationsCollection)
     }
 
     assert(gatewayManager.gateways !== null)
     assert(Object.keys(gatewayManager.gateways).length > 0)
-    console.log('End of initialization.')
+    logger.info('End of initialization.')
   }
 
   finalize () {

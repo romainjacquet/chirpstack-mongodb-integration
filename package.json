@@ -9,7 +9,8 @@
         "mongodb": "^6.5.0",
         "package.json": "^2.0.1",
         "protobufjs": "^7.2.6",
-        "redis": "^4.6.13"
+        "redis": "^4.6.13",
+        "winston": "^3.13.1"
     },
     "devDependencies": {
         "standard": "^17.1.0"
